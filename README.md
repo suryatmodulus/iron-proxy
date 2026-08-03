@@ -280,6 +280,29 @@ through the proxy. Exceptions:
   `*.internal.corp`). Traffic to these hosts bypasses the proxy entirely.
 - **`records`:** static A or CNAME records. Highest precedence.
 
+### Response retry handler
+
+Set `IRON_RESPONSE_RETRY_HANDLER_URL`,
+`IRON_RESPONSE_RETRY_COMPLETE_URL`, `IRON_RESPONSE_RETRY_HANDLER_TOKEN`,
+`IRON_RESPONSE_RETRY_HANDLER_SANDBOX_ID`, and a comma-separated
+`IRON_RESPONSE_RETRY_STATUSES` list to enable externally authorized response
+retries. The authorization handler receives the exact authority, method,
+path/query, replayability, response status and headers, trace context, and
+sandbox identity. It may return request headers plus an attempt ID for one
+exact replay. The completion handler then receives the replay status and
+response headers selected by `IRON_RESPONSE_RETRY_COMPLETION_HEADERS`, which
+defaults to `Payment-Receipt`.
+
+Response bodies are never sent to either handler, destinations cannot change,
+and connection/framing headers are rejected. Requests over
+`proxy.max_request_body_bytes` proceed normally but are marked non-replayable;
+if challenged, their original response is returned. Handler failures also
+preserve the original response. Handler URLs must use HTTPS unless loopback or
+`IRON_RESPONSE_RETRY_HANDLER_ALLOW_HTTP=true` is explicitly configured for a
+trusted internal network. Redirects are rejected, and the response retry token
+must be configured independently from the control-plane token. WebSocket,
+gRPC, and unknown-length streaming requests bypass response retry handling.
+
 ### Allowlist
 
 Default-deny. Requests must match at least one domain glob or CIDR to proceed.
